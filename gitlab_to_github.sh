@@ -77,81 +77,21 @@ if [ -d "$repo_name" ]; then
     fi
 fi
 
-# Prompt the user for GitHub repository URL
-read -p "Enter the GitHub repository URL: " github_url
+# Prompt the user for GitHub Personal Access Token (PAT)
+read -sp "Enter your GitHub Personal Access Token: " github_token
+echo ""
 
-# Clone the GitLab repository
-echo "Cloning GitLab repository into '$repo_name'..."
-git clone "$gitlab_url" "$repo_name"
-if [ $? -ne 0 ]; then
-    echo "Error: Failed to clone GitLab repository."
-    exit 1
-fi
+# Prompt the user for GitHub repository details
+read -p "Enter the new GitHub repository name: " new_repo_name
+read -p "Enter a description for the GitHub repository: " repo_description
+read -p "Should the repository be private? (y/n): " repo_private
 
-# Navigate into the cloned repository
-cd "$repo_name" || exit
-
-# Add GitHub as a new remote
-echo "Adding GitHub as a new remote..."
-git remote add github "$github_url"
-if [ $? -ne 0 ]; then
-    echo "Error: Failed to add GitHub remote."
-    exit 1
-fi
-
-# Push all branches to GitHub
-echo "Pushing all branches to GitHub..."
-git push github --all
-if [ $? -ne 0 ]; then
-    echo "Error: Failed to push branches to GitHub."
-    exit 1
-fi
-
-# Push all tags to GitHub
-echo "Pushing all tags to GitHub..."
-git push github --tags
-if [ $? -ne 0 ]; then
-    echo "Error: Failed to push tags to GitHub."
-    exit 1
-fi
-
-# Ask the user if they want to remove the GitLab remote
-read -p "Do you want to remove the GitLab remote? (y/n): " remove_gitlab
-
-if [ "$remove_gitlab" == "y" ]; then
-    echo "Removing GitLab remote..."
-    git remote remove origin
-    if [ $? -ne 0 ]; then
-        echo "Error: Failed to remove GitLab remote."
-        exit 1
-    fi
-fi
-
-# Check if the 'origin' remote already exists
-if git remote get-url origin >/dev/null 2>&1; then
-    echo "Remote 'origin' already exists."
-    read -p "Do you want to rename the GitHub remote to 'origin-force'? (y/n): " rename_github
-    if [ "$rename_github" == "y" ]; then
-        echo "Renaming GitHub remote to 'origin-force'..."
-        git remote rename github origin-force
-        if [ $? -ne 0 ]; then
-            echo "Error: Failed to rename GitHub remote."
-            exit 1
-        fi
-    else
-        echo "Keeping the remote as 'github'."
-    fi
+# Convert 'y'/'n' input to true/false
+if [ "$repo_private" == "y" ]; then
+    private=true
 else
-    read -p "Do you want to rename the GitHub remote to 'origin'? (y/n): " rename_github
-    if [ "$rename_github" == "y" ]; then
-        echo "Renaming GitHub remote to 'origin'..."
-        git remote rename github origin
-        if [ $? -ne 0 ]; then
-            echo "Error: Failed to rename GitHub remote."
-            exit 1
-        fi
-    fi
+    private=false
 fi
 
-echo "Migration complete!"
+# Create the new Git
 
