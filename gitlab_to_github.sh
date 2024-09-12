@@ -93,5 +93,46 @@ else
     private=false
 fi
 
-# Create the new Git
+# Create the new GitHub repository using GitHub API
+echo "Creating the new repository on GitHub..."
+create_repo_response=$(curl -s -H "Authorization: token $github_token" \
+    -d "{\"name\": \"$new_repo_name\", \"description\": \"$repo_description\", \"private\": $private}" \
+    https://api.github.com/user/repos)
+
+# Check if the repository creation was successful
+if echo "$create_repo_response" | grep -q '"full_name":'; then
+    echo "Repository '$new_repo_name' created successfully on GitHub."
+    # Extract the new repository's clone URL
+    github_url=$(echo "$create_repo_response" | grep -o '"clone_url": "[^"]*' | grep -o '[^"]*$')
+else
+    echo "Error: Failed to create the repository on GitHub."
+    echo "Response: $create_repo_response"
+    exit 1
+fi
+
+# Clone the GitLab repository
+echo "Cloning GitLab repository into '$repo_name'..."
+git clone "$gitlab_url" "$repo_name"
+if [ $? -ne 0 ]; then
+    echo "Error: Failed to clone GitLab repository."
+    exit 1
+fi
+
+# Navigate into the cloned repository
+cd "$repo_name" || exit
+
+# Add GitHub as a new remote
+echo "Adding GitHub as a new remote..."
+git remote add github "$github_url"
+if [ $? -ne 0 ]; then
+    echo "Error: Failed to add GitHub remote."
+    exit 1
+fi
+
+# Push all branches to GitHub
+echo "Pushing all branches to GitHub..."
+git push github --all
+if [ $? -ne 0 ]; then
+    echo "Error: Failed to push branches to GitHub."
+    exit 
 
